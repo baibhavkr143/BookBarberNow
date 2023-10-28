@@ -22,12 +22,12 @@ router.post("/customer/register", upload.single("photo"), async (req, res) => {
     const email = data.email;
     const photo = req.file;
     //console.log(data);
-    if (data.password == data.conformPassword) {
+    if (data.password == data.confirmPassword) {
       const find = await db.loginDbCustomer.findOne({ email });
       if (find) {
         res.status(400).json({ message: "user already registered" });
       } else {
-        delete data.conformPassword;
+        delete data.confirmPassword;
         data.password = await bcrypt.hash(data.password, 12);
         //console.log(data.password);
         const doc = new db.loginDbCustomer(data);
