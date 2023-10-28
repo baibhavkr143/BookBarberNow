@@ -4,9 +4,10 @@ const cookieParser=require("cookie-parser");
 require("./db/db_customer.js");
 const app= new express();
 
-app.use(express.json());
+app.use(express.json()); //used to parse json data into js object
 app.use(cookieParser());
 app.use(require("./routes/customer/customer.js"));
+app.use(require("./routes/seller/seller.js"));
 //app.use(require("./routes/customer/customer_api.js"));
 
 const port=process.env.PORT ||9050;

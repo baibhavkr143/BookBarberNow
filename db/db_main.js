@@ -1,5 +1,10 @@
 const mongoose=require('mongoose');
-mongoose.connect('mongodb://0.0.0.0:27017/SOYO',{useNewUrlParser:true,useUnifiedTopology:true}).then(()=>{
+const env=require("dotenv");
+env.config({ path: "config.env" });
+
+//console.log(process.env.database);
+const mdb=process.env.database;
+mongoose.connect(mdb,{useNewUrlParser:true,useUnifiedTopology:true}).then(()=>{
     console.log('Connected to MongoDB');
 }).catch((error)=>{
     console.log(error.message);
