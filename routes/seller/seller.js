@@ -26,8 +26,8 @@ router.post("/seller/register", upload.single("photo"), async (req, res) => {
         delete data.confirmPassword;
         const doc = new db.sellerLoginData(data);
         if (photo) {
-          doc.photo.data = photo.buffer;
-          doc.photo.contentType = photo.mimetype;
+          doc.Photo.data = photo.buffer;
+          doc.Photo.contentType = photo.mimetype;
         }
         const result = await doc.save();
         if (result) res.status(200).json({ message: "success in upload" });
