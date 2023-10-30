@@ -154,7 +154,7 @@ router.post("/customer/forgotPassword",async (req,res)=>{
           console.log("Error sending email:", error);
         } else {
           console.log("Email sent:", info.response);
-          res.status(400).json({message:"sending email sucessfully"});
+          res.status(200).json({message:"sending email sucessfully"});
         }
       });
       res.status(200).json({message:"successFully send"})
