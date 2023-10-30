@@ -90,8 +90,8 @@ router.post("/seller/updatePhoto", upload.single("photo"), async (req, res) => {
     const findPerson = db.sellerLoginData.findOne({ email });
     if (findPerson) {
       if (photo) {
-        findPerson.photo.data = photo.buffer;
-        findPerson.photo.contentType = photo.mimetype;
+        findPerson.Photo.data = photo.buffer;
+        findPerson.Photo.contentType = photo.mimetype;
       }
       const result = findPerson.save();
       res.status(200).json({ message: "success in saving photo" });
