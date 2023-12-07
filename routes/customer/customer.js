@@ -21,7 +21,7 @@ router.post("/customer/register", upload.single("photo"), async (req, res) => {
     const data = req.body;
     const email = data.email;
     const photo = req.file;
-    //console.log(data);
+    console.log(data);
     if (data.password == data.confirmPassword) {
       const find = await db.loginDbCustomer.findOne({ email });
       if (find) {
@@ -118,6 +118,7 @@ router.post("/customer/updatePhoto",upload.single("photoUpdate"),async (req,res)
         }
         //console.log(result);
         const ans=await result.save();
+        memoizeCustomerDetails.invalidate(email);
         if(ans)res.status(200).json({message:"photo changed"});
         else res.status(404).json({message:"photo not changed"});
       }
@@ -141,7 +142,7 @@ router.post("/customer/forgotPassword",async (req,res)=>{
       const randomSixDigitNumber = Math.floor(100000 + Math.random() * 900000);
       doc.token=randomSixDigitNumber.toString();
       doc.ExpiryToken=Date.now()+5*60*1000;
-      doc.save();
+      const result =await doc.save();
       const mailOptions = {
         from: "bookbarbernow@gmail.com",
         to: email,
@@ -168,9 +169,8 @@ router.post("/customer/resetPassword",async (req,res)=>{
     const email=req.body.email;
     const token=req.body.otp;
     var newPassword=req.body.newPassword;
-    console.log(newPassword);
     const doc=await db.loginDbCustomer.findOne({email});
-    //console.log(doc);
+    console.log(doc);
     if(doc.token&&doc.token==token)
     {
       if(doc.ExpiryToken>Date.now())
@@ -178,7 +178,7 @@ router.post("/customer/resetPassword",async (req,res)=>{
         doc.password=await bcrypt.hash(newPassword,12); 
         doc.token="";
         doc.ExpiryToken="";
-        const result=doc.save();
+        const result=await doc.save();
         //console.log("token is :"+token);
         if(result)res.status(200).json({message:"password changed successfully"});
         else res.status(400).json({message:"password not changed successfully"});
@@ -193,5 +193,41 @@ router.post("/customer/resetPassword",async (req,res)=>{
 router.get("/customer/logout", (req, res) => {
   res.clearCookie("CustomerLogin");
   res.status(200).json({ messageL: "Logout successfully" });
+});
+
+
+const memoizeCustomerDetails = {
+  cache: new Map(),
+  async get(email) {
+    try {
+      if (this.cache.has(email)) 
+      return this.cache.get(email);
+
+      const data = await db.sellerLoginData.findOne({ email });
+
+      if (data) 
+      this.cache.set(email, data);
+
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  },
+  invalidate(email)
+  {
+    this.cache.delete(email);
+  }
+};
+
+router.get("/customer/details/:email", async (req, res) => {
+  try {
+    try {
+      const email=req.params.email;
+      const data=await memoizeCustomerDetails.get(email);
+      res.status(200).send(data);
+    } catch (error) {
+      res.status(404).send(error);
+    }
+  } catch (error) {}
 });
 module.exports = router;

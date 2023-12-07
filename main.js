@@ -8,6 +8,7 @@ app.use(express.json()); //used to parse json data into js object
 app.use(cookieParser());
 app.use(require("./routes/customer/customer.js"));
 app.use(require("./routes/seller/seller.js"));
+app.use(require("./routes/seller/seller_shop_api.js"));
 //app.use(require("./routes/customer/customer_api.js"));
 
 const port=process.env.PORT ||9050;

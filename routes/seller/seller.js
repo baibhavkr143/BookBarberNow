@@ -68,9 +68,10 @@ router.post("/seller/updatePassword", async (req, res) => {
     const email = req.body.email;
     const password = req.body.password;
     const newPassword = req.body.newPassword;
-    const user = db.sellerLoginData.findOne({ email });
+    const user = await db.sellerLoginData.findOne({ email });
     if (user) {
       var compare = await bcrypt.compare(password, user.password);
+      console.log("pass2");
       if (compare) {
         user.password = await bcrypt.hash(newPassword, 12);
         const result = await user.save();
@@ -80,6 +81,7 @@ router.post("/seller/updatePassword", async (req, res) => {
       } else res.status(404).json({ message: "error in update password" });
     }
   } catch (error) {
+    console.log(error);
     res.status(404).json({ message: `Error updating password ${error}` });
   }
 });
@@ -87,13 +89,13 @@ router.post("/seller/updatePhoto", upload.single("photo"), async (req, res) => {
   try {
     const email = req.body.email;
     const photo = req.body;
-    const findPerson = db.sellerLoginData.findOne({ email });
+    const findPerson = await db.sellerLoginData.findOne({ email });
     if (findPerson) {
       if (photo) {
         findPerson.Photo.data = photo.buffer;
         findPerson.Photo.contentType = photo.mimetype;
       }
-      const result = findPerson.save();
+      const result = await findPerson.save();
       res.status(200).json({ message: "success in saving photo" });
     } else res.status(404).json({ message: "error saving photo" });
   } catch (error) {
@@ -101,65 +103,94 @@ router.post("/seller/updatePhoto", upload.single("photo"), async (req, res) => {
   }
 });
 
-router.post("/seller/forgotPassword",async (req,res)=>{
+router.post("/seller/forgotPassword", async (req, res) => {
   try {
-    const email=req.body.email;
-    //console.log(email);
-    const doc=await db.sellerLoginData.findOne({email});
-    //console.log(doc);
-    if(doc)
-    {
+    const email = req.body.email;
+    const doc = await db.sellerLoginData.findOne({ email });
+    if (doc) {
       const randomSixDigitNumber = Math.floor(100000 + Math.random() * 900000);
-      doc.token=randomSixDigitNumber.toString();
-      doc.ExpiryToken=Date.now()+5*60*1000;
-      doc.save();
+      doc.token = randomSixDigitNumber.toString();
+      doc.ExpiryToken = Date.now() + 5 * 60 * 1000;
+      const result = await doc.save();
       const mailOptions = {
         from: "bookbarbernow@gmail.com",
         to: email,
         subject: "Password Reset",
         text: `reset code is ${randomSixDigitNumber} valid for 10 minutes`,
       };
-    
+
       nodeMailer.sendMail(mailOptions, (error, info) => {
         if (error) {
           console.log("Error sending email:", error);
         } else {
           console.log("Email sent:", info.response);
-          res.status(200).json({message:"sending email sucessfully"});
+          res.status(200).json({ message: "sending email sucessfully" });
         }
       });
-      res.status(200).json({message:"successFully send"})
-    }else res.status(404).json({message:"user not found"});
-  } catch (error) {
-    
-  }
-})
+      res.status(200).json({ message: "successFully send" });
+    } else res.status(404).json({ message: "user not found" });
+  } catch (error) {}
+});
 
-router.post("/seller/resetPassword",async (req,res)=>{
+router.post("/seller/resetPassword", async (req, res) => {
   try {
-    const email=req.body.email;
-    const token=req.body.otp;
-    var newPassword=req.body.newPassword;
+    const email = req.body.email;
+    const token = req.body.otp;
+    var newPassword = req.body.newPassword;
     console.log(newPassword);
-    const doc=await db.sellerLoginData.findOne({email});
-    //console.log(doc);
-    if(doc.token&&doc.token==token)
-    {
-      if(doc.ExpiryToken>Date.now())
-      {  
-        doc.password=await bcrypt.hash(newPassword,12); 
-        doc.token="";
-        doc.ExpiryToken="";
-        const result=doc.save();
-        //console.log("token is :"+token);
-        if(result)res.status(200).json({message:"password changed successfully"});
-        else res.status(400).json({message:"password not changed successfully"});
-      }
-      else res.status(400).json({message:"token not valid"});
-    }else res.status(400).json({message:"token not valid"});
+    const doc = await db.sellerLoginData.findOne({ email });
+    console.log(doc);
+    if (doc.token && doc.token == token) {
+      if (doc.ExpiryToken > Date.now()) {
+        doc.password = await bcrypt.hash(newPassword, 12);
+        doc.token = "";
+        doc.ExpiryToken = "";
+        const result = await doc.save();
+        if (result)
+          res.status(200).json({ message: "password changed successfully" });
+        else
+          res
+            .status(400)
+            .json({ message: "password not changed successfully" });
+      } else res.status(400).json({ message: "token not valid" });
+    } else res.status(400).json({ message: "token not valid" });
   } catch (error) {
     res.status(400).send(error);
   }
-})
+});
 
+const memoizesellerDetails = {
+  cache: new Map(),
+  async get(email) {
+    try {
+      if (this.cache.has(email)) 
+      return this.cache.get(email);
+
+      const data = await db.sellerLoginData.findOne({ email });
+
+      if (data) 
+      this.cache.set(email, data);
+
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  },
+  invalidate(email)
+  {
+    this.cache.delete(email);
+  }
+};
+
+router.get("/seller/details/:email", async (req, res) => {
+  try {
+    try {
+      const email=req.params.email;
+      const data=await memoizesellerDetails.get(email);
+      res.status(200).send(data);
+    } catch (error) {
+      res.status(404).send(error);
+    }
+  } catch (error) {}
+});
 module.exports = router;
