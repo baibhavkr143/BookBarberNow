@@ -16,11 +16,10 @@ router.get("/customer/home", auth, (req, res) => {
   res.status(200).json({ message: "welcom to customer side ..........." });
 });
 
-router.post("/customer/register", upload.single("photo"), async (req, res) => {
+router.post("/customer/register", async (req, res) => {
   try {
     const data = req.body;
     const email = data.email;
-    const photo = req.file;
     console.log(data);
     if (data.password == data.confirmPassword) {
       const find = await db.loginDbCustomer.findOne({ email });
@@ -31,10 +30,6 @@ router.post("/customer/register", upload.single("photo"), async (req, res) => {
         data.password = await bcrypt.hash(data.password, 12);
         //console.log(data.password);
         const doc = new db.loginDbCustomer(data);
-        if (photo) {
-          doc.photo.data = photo.buffer;
-          doc.photo.contentType = photo.mimetype;
-        }
         const result = await doc.save();
         if (result)
           res.status(200).json({ message: "registration successful" });
@@ -98,12 +93,12 @@ router.post("/customer/updatePassword", async (req, res) => {
     res.status(400).send(error);
   }
 });
-router.post("/customer/updatePhoto",upload.single("photoUpdate"),async (req,res)=>{
+router.post("/customer/updatePhoto",async (req,res)=>{
   try {
     const data=req.body;
     const email=data.email;
     const password=data.password;
-    const photo=req.file; //mutler add file in request.file path
+    const photo=data.photo //mutler add file in request.file path
     //console.log(data);
     const result=await db.loginDbCustomer.findOne({email});
     if(result)
@@ -113,8 +108,7 @@ router.post("/customer/updatePhoto",upload.single("photoUpdate"),async (req,res)
       {
         if (photo) {
           //console.log("i am here");
-          result.photo.data = photo.buffer;
-          result.photo.contentType = photo.mimetype;
+          result.photo=photo;
         }
         //console.log(result);
         const ans=await result.save();
@@ -228,6 +222,8 @@ router.get("/customer/details/:email", async (req, res) => {
     } catch (error) {
       res.status(404).send(error);
     }
-  } catch (error) {}
+  } catch (error) {
+    res.status(400).send(error);
+  }
 });
 module.exports = router;

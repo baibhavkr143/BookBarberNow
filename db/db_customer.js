@@ -14,8 +14,7 @@ const loginSchema = new mongoose.Schema({
     required: true,
   },
   photo: {
-    data: Buffer, // Store binary data of the image
-    contentType: String, // Store the content type of the image (e.g., "image/jpeg", "image/png")
+     type: String
   },
   token: String, 
   ExpiryToken: Date

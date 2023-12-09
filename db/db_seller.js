@@ -1,7 +1,11 @@
 const mongoose = require("./db_main.js");
 
 const sellerLoginSchema = new mongoose.Schema({
-  name: {
+  firstName: {
+    type: String,
+    required: true,
+  },
+  lastName:{
     type: String,
     required: true,
   },
@@ -11,13 +15,13 @@ const sellerLoginSchema = new mongoose.Schema({
     unique: true,
   },
   Photo: {
-    data: Buffer,
-    contentType: String,
+    type: String
   },
   password: {
     type: String,
     required: true,
   },
+  phone:Number,
   token: String,
   ExpiryToken: Date,
 });
@@ -59,8 +63,7 @@ const barberShopSchema = new mongoose.Schema({
   },
   photos:[
     {
-        data:Buffer, 
-        contentType:String
+        type:String
     }
   ],
   numSeats:{type:Number,reqired:true}
@@ -81,7 +84,7 @@ const seatSchema = new mongoose.Schema({
       validator: function (array) {
         return array.length === 11; // Assuming 10 slots
       },
-      message: 'Bookings array must have exactly 10 elements.',
+      message: 'Bookings array must have exactly 11 elements.',
     },
     default: new Array(11).fill(true), // Initialize all slots as true (available)
   },
