@@ -7,9 +7,7 @@ const app= new express();
 
 const corsOptions = {
     origin: [
-      'https://vegitablemarketlogs.onrender.com',
-      'http://localhost:3000',
-      'https://veggies-seller.onrender.com',
+      'http://localhost:5173'
     ],
   };
   

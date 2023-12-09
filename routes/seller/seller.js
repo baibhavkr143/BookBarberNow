@@ -9,14 +9,11 @@ const env = require("dotenv");
 const router = express.Router();
 env.config({ path: "config.env" });
 
-const storage = multer.memoryStorage(); // Store the file in memory as a Buffer
-const upload = multer({ storage: storage });
-
-router.post("/seller/register", upload.single("photo"), async (req, res) => {
+router.post("/seller/register", async (req, res) => {
   try {
     const data = req.body;
     const email = req.body.email;
-    const photo = req.file;
+   
     const result = await db.sellerLoginData.findOne({ email });
     if (result) {
       res.status(400).json({ message: "user already registered" });
@@ -25,10 +22,7 @@ router.post("/seller/register", upload.single("photo"), async (req, res) => {
         data.password = await bcrypt.hash(data.password, 12);
         delete data.confirmPassword;
         const doc = new db.sellerLoginData(data);
-        if (photo) {
-          doc.Photo.data = photo.buffer;
-          doc.Photo.contentType = photo.mimetype;
-        }
+        
         const result = await doc.save();
         if (result) res.status(200).json({ message: "success in upload" });
         else res.status(404).json({ message: "error in upload" });
@@ -85,16 +79,17 @@ router.post("/seller/updatePassword", async (req, res) => {
     res.status(404).json({ message: `Error updating password ${error}` });
   }
 });
-router.post("/seller/updatePhoto", upload.single("photo"), async (req, res) => {
+router.post("/seller/updateDetails", async (req, res) => {
   try {
     const email = req.body.email;
-    const photo = req.body;
+    const photo = req.body.photo;
+    const name=req.body.name;
     const findPerson = await db.sellerLoginData.findOne({ email });
     if (findPerson) {
-      if (photo) {
-        findPerson.Photo.data = photo.buffer;
-        findPerson.Photo.contentType = photo.mimetype;
-      }
+      if(photo)
+      findPerson.photo = photo;
+      if(name)
+      findPerson.name=name;
       const result = await findPerson.save();
       res.status(200).json({ message: "success in saving photo" });
     } else res.status(404).json({ message: "error saving photo" });
