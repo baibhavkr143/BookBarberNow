@@ -13,7 +13,7 @@ router.post("/seller/register", async (req, res) => {
   try {
     const data = req.body;
     const email = req.body.email;
-   
+
     const result = await db.sellerLoginData.findOne({ email });
     if (result) {
       res.status(400).json({ message: "user already registered" });
@@ -22,7 +22,7 @@ router.post("/seller/register", async (req, res) => {
         data.password = await bcrypt.hash(data.password, 12);
         delete data.confirmPassword;
         const doc = new db.sellerLoginData(data);
-        
+
         const result = await doc.save();
         if (result) res.status(200).json({ message: "success in upload" });
         else res.status(404).json({ message: "error in upload" });
@@ -49,7 +49,8 @@ router.post("/seller/login", async (req, res) => {
           expires: new Date(Date.now() + 1000 * 60 * 50),
           httpOnly: true,
         });
-        res.status(200).json({ message: "Login successful" });
+        const data = await db.sellerLoginData.findOne({ email });
+        res.status(200).send(data);
       } else res.status(400).json({ message: "bad request" });
     } else res.status(400).json({ message: "user does not exist" });
   } catch (error) {
@@ -83,16 +84,16 @@ router.post("/seller/updateDetails", async (req, res) => {
   try {
     const email = req.body.email;
     const photo = req.body.photo;
-    const name=req.body.name;
+    const name = req.body.name;
     const findPerson = await db.sellerLoginData.findOne({ email });
     if (findPerson) {
-      if(photo)
-      findPerson.photo = photo;
-      if(name)
-      findPerson.name=name;
+      if (photo) findPerson.photo = photo;
+      if (name) findPerson.name = name;
       const result = await findPerson.save();
       memoizesellerDetails.invalidate(email);
-      res.status(200).json({ message: "success in saving photo" });
+
+      const data = await db.sellerLoginData.findOne({ email });
+      res.status(200).send(data);
     } else res.status(404).json({ message: "error saving photo" });
   } catch (error) {
     res.status(400).send(`error in saving photo: ${error}`);
@@ -159,32 +160,28 @@ const memoizesellerDetails = {
   cache: new Map(),
   async get(email) {
     try {
-      if (this.cache.has(email)) 
-      return this.cache.get(email);
+      if (this.cache.has(email)) return this.cache.get(email);
 
       const data = await db.sellerLoginData.findOne({ email });
-      if(data)
-      delete data.password;
+      if (data) delete data.password;
 
-      if (data) 
-      this.cache.set(email, data);
+      if (data) this.cache.set(email, data);
 
       return data;
     } catch (error) {
       throw error;
     }
   },
-  invalidate(email)
-  {
+  invalidate(email) {
     this.cache.delete(email);
-  }
+  },
 };
 
 router.get("/seller/details/:email", async (req, res) => {
   try {
     try {
-      const email=req.params.email;
-      const data=await memoizesellerDetails.get(email);
+      const email = req.params.email;
+      const data = await memoizesellerDetails.get(email);
       res.status(200).send(data);
     } catch (error) {
       res.status(404).send(error);
