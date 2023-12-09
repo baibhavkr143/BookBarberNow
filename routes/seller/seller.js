@@ -91,6 +91,7 @@ router.post("/seller/updateDetails", async (req, res) => {
       if(name)
       findPerson.name=name;
       const result = await findPerson.save();
+      memoizesellerDetails.invalidate(email);
       res.status(200).json({ message: "success in saving photo" });
     } else res.status(404).json({ message: "error saving photo" });
   } catch (error) {
@@ -162,6 +163,8 @@ const memoizesellerDetails = {
       return this.cache.get(email);
 
       const data = await db.sellerLoginData.findOne({ email });
+      if(data)
+      delete data.password;
 
       if (data) 
       this.cache.set(email, data);
