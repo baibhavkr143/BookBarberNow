@@ -156,6 +156,11 @@ router.post("/seller/resetPassword", async (req, res) => {
   }
 });
 
+router.get("/customer/logout", (req, res) => {
+  res.clearCookie("sellerLogin");
+  res.status(200).json({ messageL: "Logout successfully" });
+});
+
 const memoizesellerDetails = {
   cache: new Map(),
   async get(email) {
