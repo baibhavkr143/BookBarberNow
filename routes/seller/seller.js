@@ -58,28 +58,20 @@ router.post("/seller/login", async (req, res) => {
   }
 });
 
-router.post("/seller/updatePassword", async (req, res) => {
+const updatePassword= async (data) => {
   try {
-    const email = req.body.email;
-    const password = req.body.password;
-    const newPassword = req.body.newPassword;
+    const email = data.email;
+    const password = data.password;
+    const newPassword = data.newPassword;
     const user = await db.sellerLoginData.findOne({ email });
     if (user) {
       var compare = await bcrypt.compare(password, user.password);
-      console.log("pass2");
-      if (compare) {
-        user.password = await bcrypt.hash(newPassword, 12);
-        const result = await user.save();
-        if (result)
-          res.status(200).json({ message: "sucess in update password" });
-        else res.status(404).json({ message: "error in update password" });
-      } else res.status(404).json({ message: "error in update password" });
-    }
+      return compare;
+      } else return false;
   } catch (error) {
-    console.log(error);
-    res.status(404).json({ message: `Error updating password ${error}` });
+    throw error;
   }
-});
+}
 router.post("/seller/updateDetails", async (req, res) => {
   try {
     const email = req.body.email;
@@ -89,6 +81,11 @@ router.post("/seller/updateDetails", async (req, res) => {
     if (findPerson) {
       if (photo) findPerson.photo = photo;
       if (name) findPerson.name = name;
+      if(req.body.password)
+      {
+         var ans=updatePassword(req.body);
+         if(ans)findPerson.password = await bcrypt.hash(req.body.newPassword,12);
+      }
       const result = await findPerson.save();
       memoizesellerDetails.invalidate(email);
 
