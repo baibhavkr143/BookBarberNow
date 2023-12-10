@@ -37,21 +37,25 @@ const barberShopSchema = new mongoose.Schema({
   address: {
     street: String,
     city: String,
+    landmark: String,
     state: String,
-    zipCode: String,
+    pinCode: String,
   },
   contact: {
     email: String,
     phone: String,
   },
-  services: [String], // An array of services provided by the barber shop
-  openingHours: [
+  services: [
     {
-      day: String,
-      startTime: String,
-      endTime: String,
-    },
-  ],
+      id:Number,
+      name: String,
+      price: String,
+    }
+  ], // An array of services provided by the barber shop
+  workingHour: {
+     startTime: String,
+     endTime: String
+  },
   // GeoJSON coordinates for the barber shop's location (for geospatial search)
   location: {
     type: { type: String, default: "Point" },
