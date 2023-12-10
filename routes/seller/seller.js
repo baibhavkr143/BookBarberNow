@@ -153,7 +153,7 @@ router.post("/seller/resetPassword", async (req, res) => {
   }
 });
 
-router.get("/customer/logout", (req, res) => {
+router.get("/seller/logout", (req, res) => {
   res.clearCookie("sellerLogin");
   res.status(200).json({ messageL: "Logout successfully" });
 });

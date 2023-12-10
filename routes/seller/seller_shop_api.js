@@ -33,7 +33,6 @@ const registerSeats = async (data, start) => {
 };
 router.post(
   "/seller/shop/registerShop",
-  upload.array("photos", 5),
   async (req, res) => {
     try {
       const data = req.body;
@@ -43,14 +42,7 @@ router.post(
         res.status(400).json({ message: "shop already registered" });
       } else {
         const newShop = new db.barberShop(data);
-        req.files.forEach((file) => {
-          newShop.photos.push({
-            data: file.buffer,
-            contentType: file.mimetype,
-          });
-        });
         await newShop.save();
-
         await registerSeats(data, 0);
         memoizeAllShopDetails.invalidate();
         memoizeShopDetails.invalidate(email);
@@ -84,19 +76,13 @@ router.post("/seller/shop/changeDescription", async (req, res) => {
 });
 router.post(
   "/seller/shop/updatePhoto",
-  upload.array("photos", 5),
   async (req, res) => {
     try {
       const email = req.body.email;
+      const photo=req.body.photo;
       const user = await db.barberShop.findOne({ email });
       if (user) {
-        user.photos = [];
-        req.files.forEach((file) => {
-          user.photos.push({
-            data: file.buffer,
-            contentType: file.mimetype,
-          });
-        });
+        user.photos =photo;
         await user.save();
         memoizeShopDetails.invalidate(email);
         memoizeAllShopDetails.invalidate();
