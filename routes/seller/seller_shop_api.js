@@ -55,12 +55,9 @@ router.post("/seller/shop/registerShop", async (req, res) => {
 
 router.post("/seller/shop/editDetails", async (req, res) => {
   try {
-    console.log("i am here");
     const data = req.body;
     const email = data.email;
-    console.log(data);
     var shop = await db.barberShop.findOne({ email });
-    console.log(shop);
     if (shop) {
       await db.barberShop.deleteOne({ email });
       await db.seat.deleteMany({email});
