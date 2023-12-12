@@ -141,7 +141,7 @@ const memoizeAllShopDetails = {
   cache: [],
   async get() {
     try {
-      //if (this.cache.length) return this.cache;
+      if (this.cache.length) return this.cache;
       this.cache = await db.barberShop.find();
       return this.cache;
     } catch (error) {
