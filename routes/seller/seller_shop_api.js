@@ -65,6 +65,10 @@ router.post("/seller/shop/editDetails", async (req, res) => {
       await doc.save();
       await registerSeats(data, 0);
       var shopDetails = await db.barberShop.findOne({ email });
+      
+      memoizeAllShopDetails.invalidateCache();
+      memoizeShopDetails.invalidate(email);
+      memoizeQueryResult.invalidateCache();
       res.status(200).send(shopDetails);
     }
     else res.status(400).json({ message:"shop not found"});
