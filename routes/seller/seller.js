@@ -153,15 +153,6 @@ router.post("/seller/resetPassword", async (req, res) => {
   }
 });
 
-router.get("/seller/deleteUser/:email",async (req,res)=>{
-  try {
-      const email=req.params.email;
-      const data=await db.sellerLoginData.deleteOne({email});
-      res.status(200).json({message:"data deleted successfully"});
-  } catch (error) {
-    res.status(400).send(error);
-  }
-})
 router.get("/seller/logout", (req, res) => {
   res.clearCookie("sellerLogin");
   res.status(200).json({ messageL: "Logout successfully" });

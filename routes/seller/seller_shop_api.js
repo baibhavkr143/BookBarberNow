@@ -65,7 +65,7 @@ router.post("/seller/shop/editDetails", async (req, res) => {
       await doc.save();
       await registerSeats(data, 0);
       var shopDetails = await db.barberShop.findOne({ email });
-      
+
       memoizeAllShopDetails.invalidateCache();
       memoizeShopDetails.invalidate(email);
       memoizeQueryResult.invalidateCache();
@@ -92,6 +92,21 @@ router.get("/seller/shop/deleteShop/:email", async (req, res) => {
     res.status(404).send(error);
   }
 });
+
+router.get("/seller/deleteUser/:email",async (req,res)=>{
+  try {
+      const email=req.params.email;
+      const data=await db.sellerLoginData.deleteOne({email});
+      await db.barberShop.deleteOne({email});
+      await db.seat.deleteMany({email});
+      memoizeAllShopDetails.invalidateCache();
+      memoizeShopDetails.invalidate(email);
+      memoizeQueryResult.invalidateCache();
+      res.status(200).json({message:"data deleted successfully"});
+  } catch (error) {
+    res.status(400).send(error);
+  }
+})
 // api for particular shop details
 const memoizeShopDetails = {
   cache: new Map(),
