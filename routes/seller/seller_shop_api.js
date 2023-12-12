@@ -31,86 +31,66 @@ const registerSeats = async (data, start) => {
     throw error;
   }
 };
-router.post(
-  "/seller/shop/registerShop",
-  async (req, res) => {
-    try {
-      const data = req.body;
-      const email = data.email;
-      const shop = await db.barberShop.findOne({ email });
-      if (shop) {
-        res.status(400).json({ message: "shop already registered" });
-      } else {
-        const newShop = new db.barberShop(data);
-        await newShop.save();
-        await registerSeats(data, 0);
-        memoizeAllShopDetails.invalidateCache();
-        memoizeShopDetails.invalidate(email);
-        memoizeQueryResult.invalidateCache();
-        res.status(200).json({ message: "success in register" });
-      }
-    } catch (error) {
-      res.status(400).send(error);
-      console.log(error);
-    }
-  }
-);
-
-router.post("/seller/shop/changeDescription", async (req, res) => {
+router.post("/seller/shop/registerShop", async (req, res) => {
   try {
     const data = req.body;
-    console.log(data);
     const email = data.email;
-    const user = await db.barberShop.findOne({ email });
-    if (!user) {
-      res.status(400).json({ message: "bad request" });
+    const shop = await db.barberShop.findOne({ email });
+    if (shop) {
+      res.status(400).json({ message: "shop already registered" });
     } else {
-      user.description = data.description;
-      await user.save();
+      const newShop = new db.barberShop(data);
+      await newShop.save();
+      await registerSeats(data, 0);
+      memoizeAllShopDetails.invalidateCache();
       memoizeShopDetails.invalidate(email);
-      memoizeAllShopDetails.invalidate();
       memoizeQueryResult.invalidateCache();
-      res.status(200).json({ message: "success in changing description" });
+      res.status(200).json({ message: "success in register" });
     }
   } catch (error) {
     res.status(400).send(error);
+    console.log(error);
   }
 });
-router.post(
-  "/seller/shop/updatePhoto",
-  async (req, res) => {
-    try {
-      const email = req.body.email;
-      const photo=req.body.photo;
-      const user = await db.barberShop.findOne({ email });
-      if (user) {
-        user.photos =photo;
-        await user.save();
-        memoizeShopDetails.invalidate(email);
-        memoizeAllShopDetails.invalidate();
-        memoizeQueryResult.invalidateCache();
-        res.status(200).json({ message: "sucess in updating shop photos" });
-      } else res.status(404).json({ message: "shop not found" });
-    } catch (error) {
-      res.status(404).send(error);
-    }
-  }
-);
 
-router.get("/seller/shop/deleteShop/:email",async (req,res)=>{
+router.post("/seller/shop/editDetails", async (req, res) => {
   try {
-      const email = req.params.email
-      const findShop=await db.barberShop.findOne({ email});
-      if(findShop)
-      {
-        const data=await db.barberShop.deleteOne({email});
-         res.status(200).json({message:"data deleted successfully"});
-      }
-      else res.status(400).json({message:"shop not found"});
+    console.log("i am here");
+    const data = req.body;
+    const email = data.email;
+    console.log(data);
+    var shop = await db.barberShop.findOne({ email });
+    console.log(shop);
+    if (shop) {
+      await db.barberShop.deleteOne({ email });
+      await db.seat.deleteMany({email});
+      const doc=new db.barberShop(data);
+      await doc.save();
+      await registerSeats(data, 0);
+      var shopDetails = await db.barberShop.findOne({ email });
+      res.status(200).send(shopDetails);
+    }
+    else res.status(400).json({ message:"shop not found"});
   } catch (error) {
     res.status(404).send(error);
   }
-})
+});
+
+router.get("/seller/shop/deleteShop/:email", async (req, res) => {
+  try {
+    const email = req.params.email;
+    const findShop = await db.barberShop.findOne({ email });
+    if (findShop) {
+      const data = await db.barberShop.deleteOne({ email });
+      memoizeAllShopDetails.invalidateCache();
+      memoizeShopDetails.invalidate(email);
+      memoizeQueryResult.invalidateCache();
+      res.status(200).json({ message: "data deleted successfully" });
+    } else res.status(400).json({ message: "shop not found" });
+  } catch (error) {
+    res.status(404).send(error);
+  }
+});
 // api for particular shop details
 const memoizeShopDetails = {
   cache: new Map(),
@@ -166,7 +146,6 @@ router.get("/seller/allShopData", async (req, res) => {
   }
 });
 
-
 //query for shops
 const memoizeQueryResult = {
   cache: new Map(),
@@ -199,37 +178,38 @@ router.get("/barber-shops", async (req, res) => {
     const filter = {};
 
     if (name) {
-      filter.name = new RegExp(name, 'i');
+      filter.name = new RegExp(name, "i");
     }
 
     if (address) {
       // Search for any of the address fields
-      filter['$or'] = [
-        { 'address.street': new RegExp(address, 'i') },
-        { 'address.city': new RegExp(address, 'i') },
-        { 'address.landmark': new RegExp(address, 'i') },
-        { 'address.state': new RegExp(address, 'i') },
-        { 'address.pinCode': new RegExp(address, 'i') },
+      filter["$or"] = [
+        { "address.street": new RegExp(address, "i") },
+        { "address.city": new RegExp(address, "i") },
+        { "address.landmark": new RegExp(address, "i") },
+        { "address.state": new RegExp(address, "i") },
+        { "address.pinCode": new RegExp(address, "i") },
       ];
     }
 
     if (services) {
-      filter['services.name'] = new RegExp(services, 'i');
+      filter["services.name"] = new RegExp(services, "i");
     }
 
-    const key = `name:${name || ''}_address:${address || ''}_services:${services || ''}`;
+    const key = `name:${name || ""}_address:${address || ""}_services:${
+      services || ""
+    }`;
     const barberShops = await memoizeQueryResult.get(key, filter);
 
     if (barberShops) {
       res.status(200).json(barberShops);
     } else {
-      res.status(404).json({ message: 'No Barber Shops found' });
+      res.status(404).json({ message: "No Barber Shops found" });
     }
   } catch (error) {
     console.error(`Error in getting Barber Shops: ${error.message}`);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
-
 
 module.exports = router;
