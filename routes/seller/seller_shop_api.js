@@ -44,8 +44,9 @@ router.post(
         const newShop = new db.barberShop(data);
         await newShop.save();
         await registerSeats(data, 0);
-        memoizeAllShopDetails.invalidate();
+        memoizeAllShopDetails.invalidateCache();
         memoizeShopDetails.invalidate(email);
+        memoizeQueryResult.invalidateCache();
         res.status(200).json({ message: "success in register" });
       }
     } catch (error) {
@@ -68,6 +69,7 @@ router.post("/seller/shop/changeDescription", async (req, res) => {
       await user.save();
       memoizeShopDetails.invalidate(email);
       memoizeAllShopDetails.invalidate();
+      memoizeQueryResult.invalidateCache();
       res.status(200).json({ message: "success in changing description" });
     }
   } catch (error) {
@@ -86,6 +88,7 @@ router.post(
         await user.save();
         memoizeShopDetails.invalidate(email);
         memoizeAllShopDetails.invalidate();
+        memoizeQueryResult.invalidateCache();
         res.status(200).json({ message: "sucess in updating shop photos" });
       } else res.status(404).json({ message: "shop not found" });
     } catch (error) {
@@ -94,6 +97,20 @@ router.post(
   }
 );
 
+router.get("/seller/shop/deleteShop/:email",async (req,res)=>{
+  try {
+      const email = req.params.email
+      const findShop=await db.barberShop.findOne({ email});
+      if(findShop)
+      {
+        const data=await db.barberShop.deleteOne({email});
+         res.status(200).json({message:"data deleted successfully"});
+      }
+      else res.status(400).json({message:"shop not found"});
+  } catch (error) {
+    res.status(404).send(error);
+  }
+})
 // api for particular shop details
 const memoizeShopDetails = {
   cache: new Map(),
@@ -148,5 +165,71 @@ router.get("/seller/allShopData", async (req, res) => {
     res.status(400).send(error);
   }
 });
+
+
+//query for shops
+const memoizeQueryResult = {
+  cache: new Map(),
+  async get(key, filter) {
+    try {
+      if (memoizeQueryResult.cache.has(key)) {
+        return memoizeQueryResult.cache.get(key);
+      }
+
+      const barberShops = await db.barberShop.find(filter);
+
+      if (barberShops.length > 0) {
+        memoizeQueryResult.cache.set(key, barberShops);
+        return barberShops;
+      }
+
+      return null;
+    } catch (error) {
+      throw error;
+    }
+  },
+  invalidateCache() {
+    memoizeQueryResult.cache.clear();
+  },
+};
+
+router.get("/barber-shops", async (req, res) => {
+  try {
+    const { name, address, services } = req.query;
+    const filter = {};
+
+    if (name) {
+      filter.name = new RegExp(name, 'i');
+    }
+
+    if (address) {
+      // Search for any of the address fields
+      filter['$or'] = [
+        { 'address.street': new RegExp(address, 'i') },
+        { 'address.city': new RegExp(address, 'i') },
+        { 'address.landmark': new RegExp(address, 'i') },
+        { 'address.state': new RegExp(address, 'i') },
+        { 'address.pinCode': new RegExp(address, 'i') },
+      ];
+    }
+
+    if (services) {
+      filter['services.name'] = new RegExp(services, 'i');
+    }
+
+    const key = `name:${name || ''}_address:${address || ''}_services:${services || ''}`;
+    const barberShops = await memoizeQueryResult.get(key, filter);
+
+    if (barberShops) {
+      res.status(200).json(barberShops);
+    } else {
+      res.status(404).json({ message: 'No Barber Shops found' });
+    }
+  } catch (error) {
+    console.error(`Error in getting Barber Shops: ${error.message}`);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 
 module.exports = router;
